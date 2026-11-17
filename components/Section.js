@@ -1,10 +1,20 @@
-// A reusable wrapper for each part of the page (Education, Projects, ...).
-// The id lets the navbar jump to it: <a href="#projects">.
-export default function Section({ id, title, children }) {
+import SplitHeading from "@/components/SplitHeading";
+
+// Every home section uses this, so spacing and headings are identical everywhere.
+export default function Section({ id, lang, title, lead, tip, alt = false, children }) {
   return (
-    <section id={id} className="scroll-mt-20 py-12">
-      <h2 className="mb-6 text-2xl font-bold">{title}</h2>
-      {children}
+    <section id={id} aria-labelledby={`${id}-title`} data-tip={tip} className={`section ${alt ? "section-alt" : ""}`}>
+      <div className="wrap">
+        <header className="max-w-3xl">
+          <SplitHeading id={`${id}-title`} text={title} lang={lang} className="h2" />
+          {lead ? (
+            <p className="lead mt-4" data-reveal="">
+              {lead}
+            </p>
+          ) : null}
+        </header>
+        {children}
+      </div>
     </section>
   );
 }

@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# design checker working files
+/.taste-skill/
+/shots/
+
+# private motion reference (personal data, never commit)
+/_reference/
+
+# local QA output
+/.qa/

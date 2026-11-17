@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "check": "node scripts/check-cv.mjs",
+    "prebuild": "node scripts/check-cv.mjs",
     "build": "next build",
+    "postbuild": "node scripts/fix-export.mjs",
     "start": "next start",
     "lint": "eslint"
   },
@@ -18,5 +21,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
     "tailwindcss": "^4"
-  }
+  },
+  "type": "module"
 }

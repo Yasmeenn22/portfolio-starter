@@ -1,16 +1,271 @@
 @import "tailwindcss";
 
-/* TODO: define your own colors here and use them as Tailwind classes,
-   e.g. --color-brand: #2f5bd9;  ->  className="text-brand bg-brand" */
-@theme {
-  --color-brand: #2f5bd9;
+/* Dark mode is a class on <html>, set before the first paint (lib/site.js). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ──────────────────────────────────────────────────────────────
+   Tokens. Every text pair is at least 4.5:1 in both themes:
+   light  muted/bg 5.7, muted/surface-2 5.3, accent/bg 6.1, white/accent 6.4
+   dark   muted/bg 7.5, muted/surface-2 6.3, accent/bg 10.0, bg/accent 10.0
+   accent-2 is decorative only (lines, dots, large type).
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --surface-2: #f2f1ec;
+  --ink: #14181f;
+  --muted: #5b6472;
+  --line: #e4e2db;
+  --accent: #0f6b5c;
+  --accent-2: #b7791f;
+  --on-accent: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  --shadow: 0 1px 2px rgb(20 24 31 / 0.04), 0 8px 24px rgb(20 24 31 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(20 24 31 / 0.05), 0 18px 40px -12px rgb(20 24 31 / 0.18);
+  --radius: 14px;
+  --nav: 64px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: light;
+}
+.dark {
+  --bg: #0e1116;
+  --surface: #151a21;
+  --surface-2: #1c232c;
+  --ink: #eceff3;
+  --muted: #9aa4b2;
+  --line: #27303b;
+  --accent: #4fd1b5;
+  --accent-2: #e0b15c;
+  --on-accent: #0e1116;
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 40px -12px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
 }
 
-html {
-  scroll-behavior: smooth;
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  /* One stack everywhere (lib/fontStack.js): Latin letters in Inter, Arabic in IBM Plex Sans Arabic. */
+  --font-sans: var(--font-stack, system-ui, sans-serif);
 }
 
-body {
-  background: #ffffff;
-  color: #171717;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-stack, system-ui, sans-serif);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  /* Arabic: taller lines, one step larger, never letter-spaced, uppercased or italic. */
+  html[lang="ar"] body { font-size: 17px; line-height: 1.8; }
+  html[lang="ar"] * { letter-spacing: 0 !important; text-transform: none !important; font-style: normal !important; }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  ::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  [id] { scroll-margin-top: calc(var(--nav) + 20px); }
+  /* Words only break when they would overflow; long strings (URLs, IDs, email) get .break-any. */
+  a, p, li, dd, dt, h1, h2, h3, span { overflow-wrap: break-word; }
+  .break-any { overflow-wrap: anywhere; }
+}
+
+@layer components {
+  .wrap {
+    width: min(100% - 2.5rem, 1120px);
+    margin-inline: auto;
+  }
+  .wrap-wide {
+    width: min(100% - 2.5rem, 1280px);
+    margin-inline: auto;
+  }
+  @media (min-width: 768px) {
+    .wrap-wide { width: min(100% - 4rem, 1280px); }
+  }
+  @media (min-width: 768px) {
+    .wrap { width: min(100% - 4rem, 1120px); }
+  }
+
+  /* The one section rhythm: every section uses components/Section.js */
+  .section { padding-block: 88px; }
+  .section + .section { border-top: 1px solid var(--line); }
+  @media (max-width: 767px) {
+    .section { padding-block: 64px; }
+  }
+  .section-alt { background: var(--surface-2); }
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  html[lang="ar"] .eyebrow { font-size: 14px; font-weight: 700; }
+  .h1 { font-size: clamp(2.25rem, 5.2vw, 3.75rem); line-height: 1.05; font-weight: 700; letter-spacing: -0.03em; }
+  .h2 { font-size: clamp(1.85rem, 3.6vw, 2.6rem); line-height: 1.12; font-weight: 700; letter-spacing: -0.025em; }
+  .h3 { font-size: 1.2rem; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
+  html[lang="ar"] .h1, html[lang="ar"] .h2 { line-height: 1.35; }
+  html[lang="ar"] .h3 { line-height: 1.5; }
+  .lead { font-size: 1.125rem; color: var(--muted); max-width: 62ch; }
+  .muted { color: var(--muted); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    min-width: 0;
+  }
+  .card-link { transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.2s; }
+  .card-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s var(--ease), background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--ink)); }
+  .btn-icon { width: 44px; padding: 0; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 40px;
+    padding: 0 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .chip:hover { border-color: var(--ink); }
+  .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .chip .n { font-size: 12px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 8px;
+    background: var(--surface-2);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .section-alt .tag { background: var(--bg); }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.7;
+    white-space: nowrap;
+  }
+  .badge-accent { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+  .link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent);
+    transition: text-decoration-color 0.2s;
+  }
+  .link:hover { text-decoration-color: var(--accent); }
+  .skip-link {
+    position: fixed;
+    inset-inline-start: 12px;
+    top: 12px;
+    z-index: 100;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    font-weight: 600;
+    transform: translateY(-160%);
+  }
+  .skip-link:focus { transform: none; }
+  /* Mirror direction arrows in Arabic. Logos, numbers and video controls are never mirrored. */
+  [dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Motion. Content is visible by default; html.motion-ok is added by
+   components/MotionRoot.js only when script runs and the visitor allows motion.
+   ────────────────────────────────────────────────────────────── */
+.motion-ok [data-reveal]:not([data-in]) { opacity: 0; transform: translateY(26px); }
+.motion-ok [data-reveal][data-in] { animation: rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms) backwards; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: none; }
+}
+.motion-ok [data-in="instant"], .motion-ok [data-in="instant"] .split-piece { animation: none !important; }
+.split-piece { display: inline-block; }
+.split-word { display: inline-block; white-space: nowrap; }
+.motion-ok [data-split]:not([data-in]) .split-piece { opacity: 0; transform: translateY(0.45em); }
+.motion-ok [data-split][data-in] .split-piece {
+  animation: piece 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) calc(var(--i, 0) * 30ms) backwards;
+}
+@keyframes piece {
+  from { opacity: 0; transform: translateY(0.45em); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse-ring {
+  from { transform: scale(1); opacity: 0.55; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

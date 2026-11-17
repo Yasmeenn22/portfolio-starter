@@ -11,7 +11,13 @@ const nextConfig = {
   images: {
     unoptimized: true, // GitHub Pages has no server to optimize images
   },
+  // Two root layouts (English at /, Arabic at /ar/) need one global 404 page:
+  // app/global-not-found.js. The export settings above are unchanged.
+  experimental: {
+    globalNotFound: true,
+  },
   turbopack: {
+    root: import.meta.dirname, // this project, not a package-lock.json further up the disk
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

@@ -94,3 +94,25 @@ Submit the link to your **live site** and your **GitHub repo**.
 
 - [Next.js Learn](https://nextjs.org/learn) · [Next.js Docs](https://nextjs.org/docs)
 - [Tailwind CSS Docs](https://tailwindcss.com/docs)
+
+---
+
+## Project notes (Yara Al-Mansouri portfolio)
+
+| What | Where |
+| --- | --- |
+| CV in English / Arabic | `data/cv.en.js`, `data/cv.ar.js` (`data/cv.js` exports both) |
+| Interface text, Dalil tips, game text, glossary | `data/ui.js` |
+| English pages (`/`) and Arabic pages (`/ar/`) | `app/(en)/…`, `app/(ar)/ar/…` (two root layouts) |
+| Bilingual 404 | `app/global-not-found.js` |
+| Photos | `assets/yara/` |
+
+Commands:
+
+- `npm run check`: fails if any CV count is wrong or English and Arabic data differ (also runs before every build).
+- `npm run build`: builds `out/`, then `scripts/fix-export.mjs` patches two static-export details for GitHub Pages.
+- `node scripts/serve.mjs`: serves `out/` locally like GitHub Pages.
+- `npx -y -p playwright@1.56.1 node scripts/qa.mjs`: layout check at 7 widths × 2 languages × 2 themes.
+- `npx -y -p playwright@1.56.1 node scripts/qa-interact.mjs`: clicks through every feature in both languages.
+
+Placeholder videos live in `data/cv.en.js` under `media[].video` (`placeholder: true` shows a "Sample video" tag).
