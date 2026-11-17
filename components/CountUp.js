@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 // Everything around the digits is kept ("40+", "1,400+"), and the final text is the CV text.
 export default function CountUp({ value, className = "" }) {
   const ref = useRef(null);
+  const barRef = useRef(null);
   useEffect(() => {
     const el = ref.current;
     const m = value.match(/^(\D*)([\d,]+(?:\.\d+)?)(.*)$/);
@@ -24,6 +25,7 @@ export default function CountUp({ value, className = "" }) {
           const k = Math.min(1, (now - start) / 1100);
           el.textContent = k < 1 ? format(target * (1 - Math.pow(1 - k, 3))) : value;
           if (k < 1) raf = requestAnimationFrame(tick);
+          else barRef.current?.setAttribute("data-done", "");
         };
         el.textContent = format(0);
         raf = requestAnimationFrame(tick);
@@ -31,15 +33,20 @@ export default function CountUp({ value, className = "" }) {
       { threshold: 0.6 },
     );
     io.observe(el);
+    const bar = barRef.current;
     return () => {
       io.disconnect();
       cancelAnimationFrame(raf);
       el.textContent = value;
+      bar?.setAttribute("data-done", "");
     };
   }, [value]);
   return (
-    <span ref={ref} dir="ltr" className={`inline-block tabular-nums ${className}`}>
-      {value}
+    <span className="flex flex-col items-start gap-2">
+      <span ref={ref} dir="ltr" className={`inline-block tabular-nums ${className}`}>
+        {value}
+      </span>
+      <span ref={barRef} aria-hidden="true" className="count-bar" />
     </span>
   );
 }

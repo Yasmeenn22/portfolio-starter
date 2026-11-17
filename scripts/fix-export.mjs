@@ -6,8 +6,8 @@
 //    copy under the dotted name. Without it, next/link prefetches log 404 errors.
 //
 // 2. With two root layouts Next shares one font-preload list, so the Arabic font is not preloaded
-//    (it would load on the English pages too). Here we add preload links for the Arabic 400 and
-//    700 faces to the Arabic pages only, so Arabic text gets its font as early as English does.
+//    by Next (it would load every weight on the English pages too). Here each page gets preload
+//    links for exactly the Arabic faces it uses.
 import { readdir, readFile, writeFile, copyFile, stat } from "node:fs/promises";
 import path from "node:path";
 
@@ -48,27 +48,41 @@ async function walk(dir) {
 }
 await walk(OUT);
 
-// 2. Arabic font preloads on /ar/ pages
-const cssDir = path.join(OUT, "_next", "static", "chunks");
-const faces = new Set();
-for (const f of await readdir(cssDir)) {
-  if (!f.endsWith(".css")) continue;
-  const css = await readFile(path.join(cssDir, f), "utf8");
-  const re = /@font-face\{font-family:IBM Plex Sans Arabic;[^}]*?font-weight:(\d+);[^}]*?src:url\(\.\.\/media\/([^)]+\.woff2)\)[^}]*?unicode-range:U\+6\?\?/g;
-  for (const m of css.matchAll(re)) if (m[1] === "400" || m[1] === "700") faces.add(m[2]);
-}
-const links = [...faces]
-  .map((file) => `<link rel="preload" href="${BASE}/_next/static/media/${file}" as="font" type="font/woff2" crossorigin=""/>`)
-  .join("");
-let pages = 0;
-if (links) {
-  for (const f of await filesUnder(path.join(OUT, "ar"))) {
-    if (!f.endsWith(".html")) continue;
-    const html = await readFile(f, "utf8");
-    if (html.includes(links)) continue;
-    await writeFile(f, html.replace("</title>", `</title>${links}`));
-    pages++;
+// 2. Arabic font preloads, per page. The Arabic face uses font-display: optional (no late swap that
+//    re-lays out the whole page), so it must arrive early: each page preloads the Arabic faces its own
+//    stylesheets declare. English pages need weight 600 (her Arabic name, the language switch);
+//    Arabic pages need 400, 600 and 700.
+const cssCache = new Map();
+async function arabicFaces(cssHref) {
+  if (!cssCache.has(cssHref)) {
+    const file = path.join(OUT, cssHref.replace(BASE, "").replace(/^\//, ""));
+    let css = "";
+    try {
+      css = await readFile(file, "utf8");
+    } catch {}
+    const re = /@font-face\{font-family:IBM Plex Sans Arabic;[^}]*?font-weight:(\d+);[^}]*?src:url\(\.\.\/media\/([^)]+\.woff2)\)[^}]*?unicode-range:U\+6\?\?/g;
+    cssCache.set(cssHref, [...css.matchAll(re)].map((m) => ({ weight: m[1], file: m[2] })));
   }
+  return cssCache.get(cssHref);
 }
 
-console.log(`fix-export: ${copied} dotted payload copies; Arabic font preloads (${faces.size}) added to ${pages} pages`);
+let pages = 0;
+for (const f of await filesUnder(OUT)) {
+  if (!f.endsWith(".html") || f.includes(`${path.sep}_next${path.sep}`)) continue;
+  let html = await readFile(f, "utf8");
+  if (html.includes('data-arabic-preload')) continue;
+  const arabicPage = /<html[^>]*lang="ar"/.test(html);
+  const weights = arabicPage ? ["400", "600", "700"] : ["600"];
+  const hrefs = [...html.matchAll(/<link rel="stylesheet" href="([^"]+\.css)"/g)].map((m) => m[1]);
+  const files = new Set();
+  for (const h of hrefs) for (const face of await arabicFaces(h)) if (weights.includes(face.weight)) files.add(face.file);
+  if (!files.size) continue;
+  const links = [...files]
+    .map((file) => `<link rel="preload" href="${BASE}/_next/static/media/${file}" as="font" type="font/woff2" crossorigin="" data-arabic-preload=""/>`)
+    .join("");
+  html = html.replace("</title>", `</title>${links}`);
+  await writeFile(f, html);
+  pages++;
+}
+
+console.log(`fix-export: ${copied} dotted payload copies; Arabic font preloads added to ${pages} pages`);

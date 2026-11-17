@@ -23,7 +23,7 @@ function Cover({ kind }) {
     article: <path d="M6 4h9l3 3v13H6zM9 10h6M9 13h6M9 16h4" />,
   }[kind];
   return (
-    <span aria-hidden="true" className="absolute inset-0 overflow-hidden bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_55%,var(--ink)))]">
+    <span aria-hidden="true" className="cover-art absolute inset-0 overflow-hidden bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_55%,var(--ink)))]">
       <span className="absolute -end-10 -top-10 size-40 rounded-full bg-[var(--accent-2)] opacity-25" />
       <span className="absolute -bottom-12 -start-8 size-32 rounded-full border-[14px] border-white/15" />
       <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="absolute start-5 top-5 opacity-90">
@@ -68,7 +68,7 @@ export default function MediaCards({ lang, media }) {
             <button
               type="button"
               onClick={(e) => open(i, e)}
-              className="card card-link group relative flex h-full w-full flex-col overflow-hidden text-start"
+              className="card card-link spot group relative flex h-full w-full flex-col overflow-hidden text-start"
             >
               <span className="sr-only">{t.playShort} </span>
               <span className="relative block aspect-video">
@@ -76,7 +76,7 @@ export default function MediaCards({ lang, media }) {
                 <span className="absolute bottom-3 start-3 rounded-full bg-black/35 px-2.5 py-0.5 text-[12px] font-semibold text-white backdrop-blur-sm">
                   {item.type}
                 </span>
-                <span className="absolute end-3 bottom-3 grid size-11 place-items-center rounded-full bg-white text-[#0e1116] shadow-lg transition-transform group-hover:scale-105">
+                <span className="play-pulse absolute end-3 bottom-3 grid size-11 place-items-center rounded-full bg-white text-[#0e1116] shadow-lg transition-transform group-hover:scale-105">
                   <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>
                 </span>
               </span>

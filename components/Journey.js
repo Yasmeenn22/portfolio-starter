@@ -22,9 +22,11 @@ export default function Journey({ items, lang, now, openLabel }) {
       const r = list.getBoundingClientRect();
       const fill = reduced ? 1 : Math.min(1, Math.max(0, (line - r.top) / r.height));
       if (fillRef.current) fillRef.current.style.transform = `scaleY(${fill.toFixed(4)})`;
-      for (const li of list.children) {
-        const dot = li.querySelector("[data-dot]");
-        if (dot) dot.dataset.passed = reduced || li.getBoundingClientRect().top + 14 < line ? "true" : "false";
+      // read all positions first, then write (no layout thrashing)
+      const states = [...list.children].map((li) => [li.querySelector("[data-dot]"), reduced || li.getBoundingClientRect().top + 14 < line]);
+      for (const [dot, passed] of states) {
+        const v = passed ? "true" : "false";
+        if (dot && dot.dataset.passed !== v) dot.dataset.passed = v;
       }
     };
     const onScroll = () => {
@@ -54,9 +56,9 @@ export default function Journey({ items, lang, now, openLabel }) {
         {items.map((m, i) => {
           const id = m.href.slice(1);
           return (
-            <li key={i} className="relative ps-10">
+            <li key={i} className="relative ps-10" data-reveal="" style={{ "--reveal-from": lang === "ar" ? "translateX(28px)" : "translateX(-28px)" }}>
               {m.current ? (
-                <span aria-hidden="true" className="absolute start-[4px] top-[18px] size-4 animate-[pulse-ring_2s_ease-out_infinite] rounded-full bg-accent" />
+                <span aria-hidden="true" className="absolute start-[4px] top-[18px] size-4 animate-[pulse-ring_2s_ease-out_3] rounded-full bg-accent" />
               ) : null}
               <span
                 data-dot=""

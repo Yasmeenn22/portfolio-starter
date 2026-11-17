@@ -26,7 +26,7 @@ export default function MotionRoot() {
       },
       { threshold: 0.06 },
     );
-    const PENDING = "[data-reveal]:not([data-in]), [data-split]:not([data-in])";
+    const PENDING = "[data-reveal]:not([data-in]), [data-split]:not([data-in]), [data-draw]:not([data-in])";
     const watch = (root) => {
       root.querySelectorAll?.(PENDING).forEach((el) => io.observe(el));
       if (root.matches?.(PENDING)) io.observe(root);
@@ -36,13 +36,11 @@ export default function MotionRoot() {
     let raf = 0;
     const settlePassed = () => {
       raf = 0;
-      document.querySelectorAll(PENDING).forEach((el) => {
-        const r = el.getBoundingClientRect();
-        if (r.bottom < 0 && el.offsetParent !== null) {
-          el.setAttribute("data-in", "instant");
-          io.unobserve(el);
-        }
-      });
+      const passed = [...document.querySelectorAll(PENDING)].filter((el) => el.getBoundingClientRect().bottom < 0 && el.offsetParent !== null);
+      for (const el of passed) {
+        el.setAttribute("data-in", "instant");
+        io.unobserve(el);
+      }
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(settlePassed);
@@ -51,11 +49,29 @@ export default function MotionRoot() {
 
     // What is already on screen when the script starts simply stays visible (it was painted
     // before hydration, and hiding it would only delay the page). Only content below animates in.
-    document.querySelectorAll(PENDING).forEach((el) => {
-      if (el.getBoundingClientRect().top < innerHeight) el.setAttribute("data-in", "instant");
-    });
+    const onScreen = [...document.querySelectorAll(PENDING)].filter((el) => el.getBoundingClientRect().top < innerHeight);
+    for (const el of onScreen) el.setAttribute("data-in", "instant");
     html.classList.add("motion-ok");
     watch(document);
+
+    // A soft spotlight follows the pointer inside cards (.spot), fine pointers only.
+    let spot = null;
+    let spotRaf = 0;
+    let last = null;
+    const paintSpot = () => {
+      spotRaf = 0;
+      if (!spot || !last) return;
+      const r = spot.getBoundingClientRect();
+      spot.style.setProperty("--mx", `${last.x - r.left}px`);
+      spot.style.setProperty("--my", `${last.y - r.top}px`);
+    };
+    const onPointer = (e) => {
+      if (e.pointerType !== "mouse") return;
+      spot = e.target.closest?.(".spot") || null;
+      last = { x: e.clientX, y: e.clientY };
+      if (spot && !spotRaf) spotRaf = requestAnimationFrame(paintSpot);
+    };
+    document.addEventListener("pointermove", onPointer, { passive: true });
     // Cards added later (a filter, a tab) are revealed the same way.
     const mo = new MutationObserver((list) => {
       for (const m of list) m.addedNodes.forEach((n) => n.nodeType === 1 && watch(n));
@@ -71,6 +87,8 @@ export default function MotionRoot() {
     };
     reduced.addEventListener("change", onChange);
     return () => {
+      document.removeEventListener("pointermove", onPointer);
+      cancelAnimationFrame(spotRaf);
       window.removeEventListener("scroll", onScroll);
       io.disconnect();
       mo.disconnect();

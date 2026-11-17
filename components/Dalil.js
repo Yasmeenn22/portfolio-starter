@@ -12,13 +12,17 @@ import { goToOtherLang } from "@/components/LangSwitch";
   ≥1280px: rides a thin rail in the end-side gutter; its place on the rail is the scroll progress,
            and each section has a tick (a button) on the rail, so the rail is also a page map.
   <1280px: a fixed button in the bottom end corner with a ring showing scroll progress.
-  Tips: a [data-tip] element under a resting pointer (900ms) gets one short tip, once per visit,
-  at least 12s apart, hidden after 6s, on Escape or on scroll. No tips while typing, while a video
-  is open or during the game. On touch screens tips only appear in the panel, after a tap.
+  Tips: arriving at a section (by scrolling, the navbar or the rail) shows that section's tip on
+  its own after 600ms, once per visit. A pointer resting on a [data-tip] element still gets its
+  tip, but a section arrival comes first. One bubble at a time, at least 4s apart, hidden after 5s,
+  on Escape or when the visitor scrolls on. Never while typing, while a dialog or video is open or
+  while the Board's story plays. "Mute tips" in the panel turns all of it off and is remembered.
 */
 const TIP_DELAY = 900;
-const TIP_GAP = 12000;
-const TIP_LIFE = 6000;
+const TIP_GAP = 4000; // at least 4 seconds between two bubbles
+const TIP_LIFE = 5000;
+const ARRIVE_DELAY = 600; // a section's tip shows this long after the visitor arrives
+const SCROLL_HIDE = 180; // a bubble hides once the visitor scrolls on this far
 const store = {
   get(k) {
     try {
@@ -79,6 +83,8 @@ function DalilGuide({ lang, cvHref }) {
   const [current, setCurrent] = useState("top");
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState(null); // { text, top }
+  const [closing, setClosing] = useState(false);
+  const [nod, setNod] = useState(0);
   const muted = useSyncExternalStore(subscribeMuted, () => store.get("dalil-muted") === "1", () => false);
   const wide = useSyncExternalStore(subscribeWide, () => matchMedia(WIDE).matches, () => false);
 
@@ -87,14 +93,22 @@ function DalilGuide({ lang, cvHref }) {
   const buttonRef = useRef(null);
   const panelRef = useRef(null);
   const railRef = useRef(null);
-  const state = useRef({ shown: new Set(), last: 0, timer: 0, hide: 0, target: null });
+  const state = useRef({ shown: new Set(), arrived: new Set(), last: 0, timer: 0, hide: 0, close: 0, arrive: 0, target: null, visible: false, shownY: 0 });
   // The latest tip functions, for listeners that are added once.
   const fns = useRef({});
 
   function hideTip() {
-    clearTimeout(state.current.hide);
-    state.current.target = null;
-    setTip(null);
+    const st = state.current;
+    clearTimeout(st.hide);
+    st.target = null;
+    if (!st.visible) return;
+    st.visible = false;
+    setClosing(true); // the bubble closes softly, then leaves
+    clearTimeout(st.close);
+    st.close = setTimeout(() => {
+      setTip(null);
+      setClosing(false);
+    }, 200);
   }
 
   function quiet() {
@@ -102,18 +116,24 @@ function DalilGuide({ lang, cvHref }) {
       muted ||
       open ||
       document.querySelector("dialog[open]") ||
-      document.body.hasAttribute("data-game-active") ||
+      document.body.hasAttribute("data-story-playing") ||
       document.activeElement?.matches?.("input, textarea, select, [contenteditable]")
     );
   }
 
-  function present(key, target, top, now) {
-    state.current.shown.add(key);
-    state.current.last = now;
-    state.current.target = target;
-    setTip({ text: d.tips[key], top });
-    clearTimeout(state.current.hide);
-    state.current.hide = setTimeout(() => fns.current.hideTip(), TIP_LIFE);
+  function present(key, target, top, now, text = d.tips[key], life = TIP_LIFE) {
+    const st = state.current;
+    if (key) st.shown.add(key);
+    st.last = now;
+    st.target = target;
+    st.visible = true;
+    st.shownY = window.scrollY;
+    clearTimeout(st.close);
+    setClosing(false);
+    setTip({ text, top, key });
+    setNod((n) => n + 1);
+    clearTimeout(st.hide);
+    st.hide = setTimeout(() => fns.current.hideTip(), life);
   }
 
   // Place the card beside Dalil, opening toward the content, never over the pointed element or the navbar.
@@ -146,8 +166,37 @@ function DalilGuide({ lang, cvHref }) {
   }
 
   useEffect(() => {
-    fns.current = { hideTip, showTip, quiet, open };
+    fns.current = { hideTip, showTip, quiet, open, present };
   });
+
+  // Arriving at a section shows its tip on its own, once per visit (kept for the browser session).
+  useEffect(() => {
+    const st = state.current;
+    if (muted || !current) return;
+    let seen = [];
+    try {
+      seen = JSON.parse(sessionStorage.getItem("dalil-arrived") || "[]");
+    } catch {}
+    const key = SECTIONS.find((x) => x.id === current)?.tip;
+    if (!key || seen.includes(key) || st.arrived.has(key)) return;
+    // on the very first visit the greeting speaks for the hero
+    if (key === "top" && !store.get("dalil-greeted")) return;
+    st.arrived.add(key);
+    clearTimeout(st.arrive);
+    const wait = Math.max(ARRIVE_DELAY, st.last + TIP_GAP - Date.now());
+    st.arrive = setTimeout(() => {
+      if (fns.current.quiet()) {
+        st.arrived.delete(key); // try again on the next arrival
+        return;
+      }
+      try {
+        sessionStorage.setItem("dalil-arrived", JSON.stringify([...seen, key]));
+      } catch {}
+      const heading = document.getElementById(`${current}-title`) || document.getElementById(current);
+      if (heading) fns.current.showTip(key, heading, Date.now());
+    }, wait);
+    return () => clearTimeout(st.arrive);
+  }, [current, muted]);
 
   // Scroll progress, the section in view, and the ticks' positions on the rail.
   useEffect(() => {
@@ -182,7 +231,8 @@ function DalilGuide({ lang, cvHref }) {
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(measure);
-      if (state.current.target) fns.current.hideTip(); // a tip hides when the visitor scrolls on
+      // a tip hides once the visitor scrolls on
+      if (state.current.visible && Math.abs(window.scrollY - state.current.shownY) > SCROLL_HIDE) fns.current.hideTip();
     };
     raf = requestAnimationFrame(measure);
     addEventListener("scroll", onScroll, { passive: true });
@@ -206,7 +256,7 @@ function DalilGuide({ lang, cvHref }) {
       clearTimeout(s.timer);
       if (!el) return;
       const key = el.getAttribute("data-tip");
-      if (s.shown.has(key) || Date.now() - s.last < TIP_GAP) return;
+      if (s.shown.has(key) || s.visible || Date.now() - s.last < TIP_GAP) return;
       s.timer = setTimeout(() => {
         if (!fns.current.quiet()) fns.current.showTip(key, el, Date.now());
       }, TIP_DELAY);
@@ -234,10 +284,7 @@ function DalilGuide({ lang, cvHref }) {
     const id = setTimeout(() => {
       store.set("dalil-greeted", "1");
       if (store.get("dalil-muted") === "1") return;
-      setTip({ text: d.greeting, top: null });
-      state.current.last = Date.now();
-      clearTimeout(state.current.hide);
-      state.current.hide = setTimeout(() => fns.current.hideTip(), TIP_LIFE + 2000);
+      fns.current.present(null, null, null, Date.now(), d.greeting, TIP_LIFE + 2000);
     }, 1600);
     return () => clearTimeout(id);
   }, [d.greeting]);
@@ -315,6 +362,7 @@ function DalilGuide({ lang, cvHref }) {
       title={d.name}
       className="pointer-events-auto relative grid size-11 place-items-center rounded-full border border-line bg-surface shadow-[var(--shadow)] transition-[border-color] hover:border-accent"
     >
+      <span aria-hidden="true" className="dalil-breathe" />
       {!wide ? (
         <svg aria-hidden="true" className="absolute -inset-[5px] size-[54px] -rotate-90" viewBox="0 0 54 54">
           <circle cx="27" cy="27" r="25" fill="none" stroke="var(--line)" strokeWidth="2" />
@@ -332,7 +380,7 @@ function DalilGuide({ lang, cvHref }) {
           />
         </svg>
       ) : null}
-      <svg ref={glyphRef} aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" className="transition-transform duration-150">
+      <svg ref={glyphRef} aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" className="relative transition-transform duration-150">
         <path d="M12 2.5 14.6 9.4 21.5 12l-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6Z" fill="var(--accent)" />
         <circle cx="12" cy="12" r="2" fill="var(--surface)" />
       </svg>
@@ -368,19 +416,24 @@ function DalilGuide({ lang, cvHref }) {
       <div
         ref={badgeRef}
         className={wide ? "absolute end-[34px]" : "absolute bottom-5 end-5"}
-        style={wide ? { top: RAIL_TOP, transform: `translateY(${travel})`, transition: "transform 120ms linear" } : undefined}
+        style={wide ? { top: RAIL_TOP, transform: `translateY(${travel})`, transition: "transform 450ms cubic-bezier(.34,1.35,.64,1)" } : undefined}
       >
-        {badge}
+        <div key={nod} className={nod ? "dalil-nod" : undefined}>
+          {badge}
+        </div>
       </div>
 
       {/* the tip card */}
       {tip && !open ? (
         <div
-          role="status"
-          className={`pointer-events-auto absolute w-[min(280px,calc(100vw-40px))] rounded-[14px] border border-line bg-surface p-4 text-[14.5px] leading-snug shadow-[var(--shadow-lift)] ${
+          data-closing={closing ? "" : undefined}
+          className={`dalil-bubble pointer-events-auto absolute w-[min(280px,calc(100vw-40px))] rounded-[14px] border border-line bg-surface p-4 text-[14.5px] leading-snug shadow-[var(--shadow-lift)] ${
             wide ? "end-[90px]" : "bottom-[80px] end-5"
           }`}
-          style={wide ? { top: tip.top ?? RAIL_TOP } : undefined}
+          style={{
+            ...(wide ? { top: tip.top ?? RAIL_TOP } : {}),
+            "--bubble-origin": wide ? (lang === "ar" ? "left center" : "right center") : lang === "ar" ? "bottom left" : "bottom right",
+          }}
         >
           <p className="flex items-start gap-2">
             <span aria-hidden="true" className="mt-1 size-2 shrink-0 rotate-45 bg-accent" />

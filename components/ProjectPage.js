@@ -1,11 +1,11 @@
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { getCv } from "@/data/cv";
 import { getUi } from "@/data/ui";
 import { bidi, Ltr } from "@/lib/bidi";
 import { localePath } from "@/lib/paths";
 import { techIcon } from "@/lib/icons";
 import BrandIcon from "@/components/BrandIcon";
-import SplitHeading from "@/components/SplitHeading";
 
 // Emphasise the numbers inside a result line ("38%", "3.1 million", "SAR 2,300").
 function emphasise(text, lang) {
@@ -61,7 +61,9 @@ export default function ProjectPage({ lang, slug }) {
               <span className="badge">{t.domains[getCv("en").projects[i].domain]}</span>
               <span className="text-[14px] text-muted">{t.of(i + 1, n)}</span>
             </p>
-            <SplitHeading as="h1" text={p.name} lang={lang} className="h1 mt-4 !text-[clamp(2.1rem,4.6vw,3.4rem)]" />
+            <ViewTransition name={`project-${p.slug}`} share="morph" default="none">
+              <h1 className="h1 mt-4 !text-[clamp(2.1rem,4.6vw,3.4rem)]">{bidi(p.name, lang)}</h1>
+            </ViewTransition>
             <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
               {facts.map(([k, v]) => (
                 <div key={k} className="min-w-0">

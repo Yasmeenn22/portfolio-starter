@@ -7,6 +7,8 @@
 export const cvEn = {
   name: "Yara Saud Al-Mansouri, PhD",
   shortName: "Yara Al-Mansouri",
+  // Her name in Arabic, shown beside the English one in the hero (both pages show both names).
+  nameAr: "يارا سعود المنصوري",
   monogram: "YM",
   title: "Principal Product Engineer | Design Technology Lead | HCI Researcher",
   headline: ["Principal Product Engineer", "Design Technology Lead", "HCI Researcher"],

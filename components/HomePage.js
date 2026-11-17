@@ -11,7 +11,8 @@ import Certifications from "@/components/Certifications";
 import Recognition from "@/components/Recognition";
 import MediaCards from "@/components/MediaCards";
 import Gallery from "@/components/Gallery";
-import LongRun from "@/components/LongRun";
+import Board from "@/components/Board";
+import { boardItems } from "@/lib/board";
 import LinkIcon from "@/components/LinkIcon";
 import workshop from "@/assets/yara/gallery/workshop.jpg";
 import keynote from "@/assets/yara/gallery/keynote.jpg";
@@ -19,40 +20,34 @@ import panel from "@/assets/yara/gallery/panel.jpg";
 import fireside from "@/assets/yara/gallery/fireside.jpg";
 
 const PHOTOS = { workshop, keynote, panel, fireside };
-// Leg 2 of the run follows the start dates in the CV: 2017, 2018, 2019, 2020, 2022, 2024.
-const GIVING_BACK_ORDER = [5, 4, 0, 3, 1, 2];
 
 export default function HomePage({ lang }) {
   const cv = getCv(lang);
   const t = getUi(lang);
-  const comma = lang === "ar" ? "، " : ", ";
-
-  const runItems = [
-    ...cv.languages.map((l, i) => ({ id: `lang-${i}`, title: l.language, text: [l.level, l.note].filter(Boolean).join(comma) })),
-    ...GIVING_BACK_ORDER.map((i) => {
-      const l = cv.leadership[i];
-      return { id: `lead-${i}`, title: l.role, sub: `${l.org} · ${l.period}`, text: l.detail };
-    }),
-    ...cv.interests.map((x, i) => ({ id: `interest-${i}`, title: x.line, text: null })),
-  ];
+  const items = boardItems(cv, lang);
 
   return (
     <main id="main" tabIndex={-1} className="outline-none">
       <Hero lang={lang} />
+
+      <Section id="gallery" lang={lang} title={t.gallery.title} lead={t.gallery.lead} tip="gallery" alt reveal="scale">
+        <Gallery lang={lang} photos={t.gallery.photos.map((p) => ({ ...p, src: PHOTOS[p.file] }))} />
+      </Section>
+
       <About lang={lang} />
 
-      <Section id="experience" lang={lang} title={t.experience.title} lead={t.experience.lead} tip="experience">
+      <Section id="experience" lang={lang} title={t.experience.title} lead={t.experience.lead} tip="experience" alt reveal="slide">
         <Experience lang={lang} roles={cv.experience} />
       </Section>
 
-      <Section id="projects" lang={lang} title={t.projects.title} lead={t.projects.lead} tip="projects" alt>
+      <Section id="projects" lang={lang} title={t.projects.title} lead={t.projects.lead} tip="projects">
         <Projects lang={lang} projects={cv.projects.map((p, i) => ({ ...p, domain: cvEn.projects[i].domain }))} />
       </Section>
 
-      <Section id="education" lang={lang} title={t.education.title} tip="education">
+      <Section id="education" lang={lang} title={t.education.title} tip="education" alt reveal="slide">
         <ul className="mt-8 grid gap-4 md:grid-cols-2">
           {cv.education.map((e, i) => (
-            <li key={i} id={`edu-${i}`} tabIndex={-1} className="card flex flex-col p-6" data-reveal="">
+            <li key={i} id={`edu-${i}`} tabIndex={-1} className="card spot flex flex-col p-6" data-reveal="">
               <p className="text-[14px] tabular-nums text-muted">{e.period}</p>
               <h3 className="h3 mt-2">{bidi(e.degree, lang)}</h3>
               <p className="mt-1">
@@ -76,7 +71,7 @@ export default function HomePage({ lang }) {
         </div>
       </Section>
 
-      <Section id="recognition" lang={lang} title={t.recognition.title} tip="recognition" alt>
+      <Section id="recognition" lang={lang} title={t.recognition.title} tip="recognition" reveal="scale">
         <Recognition
           lang={lang}
           awards={cv.awards}
@@ -87,7 +82,7 @@ export default function HomePage({ lang }) {
         />
       </Section>
 
-      <Section id="speaking" lang={lang} title={t.speaking.title} tip="speaking">
+      <Section id="speaking" lang={lang} title={t.speaking.title} tip="speaking" alt>
         <div className="mt-8 flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="h3">{t.speaking.talks}</h3>
           <p className="text-[14px] text-muted">{cv.talksNote}</p>
@@ -113,15 +108,11 @@ export default function HomePage({ lang }) {
         </div>
       </Section>
 
-      <Section id="gallery" lang={lang} title={t.gallery.title} lead={t.gallery.lead} tip="gallery" alt>
-        <Gallery lang={lang} photos={t.gallery.photos.map((p) => ({ ...p, src: PHOTOS[p.file] }))} />
+      <Section id="beyond" lang={lang} title={t.board.title} lead={t.board.lead} tip="beyond" reveal="scale">
+        <Board lang={lang} items={items} leadershipNote={cv.leadershipNote} />
       </Section>
 
-      <Section id="beyond" lang={lang} title={t.game.title} lead={t.game.lead} tip="beyond">
-        <LongRun lang={lang} items={runItems} leadershipNote={cv.leadershipNote} />
-      </Section>
-
-      <Section id="contact" lang={lang} title={t.contact.title} lead={t.contact.lead} tip="contact" alt>
+      <Section id="contact" lang={lang} title={t.contact.title} lead={t.contact.lead} tip="contact" alt reveal="slide">
         <div className="mt-8 grid gap-8 lg:grid-cols-12">
           <div className="card p-6 md:p-8 lg:col-span-5" data-reveal="">
             <dl className="grid gap-5">
@@ -159,7 +150,7 @@ export default function HomePage({ lang }) {
           <ul aria-label={t.contact.profiles} className="grid content-start gap-3 sm:grid-cols-2 lg:col-span-7">
             {cv.links.map((l) => (
               <li key={l.key} data-reveal="">
-                <a href={l.url} rel="me noopener" className="card card-link flex min-h-16 items-center gap-3 p-4 text-ink no-underline">
+                <a href={l.url} rel="me noopener" className="card card-link spot flex min-h-16 items-center gap-3 p-4 text-ink no-underline">
                   <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-surface-2">
                     <LinkIcon k={l.key} size={20} />
                   </span>

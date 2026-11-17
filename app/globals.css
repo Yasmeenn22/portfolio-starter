@@ -138,7 +138,7 @@
     min-width: 0;
   }
   .card-link { transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.2s; }
-  .card-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  .card-link:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
 
   .btn {
     display: inline-flex;
@@ -181,7 +181,9 @@
   }
   .chip:hover { border-color: var(--ink); }
   .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-  .chip .n { font-size: 12px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+  /* counts use a colour, not opacity, so contrast checkers read them reliably */
+  .chip .n { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chip[aria-pressed="true"] .n, .chip[aria-selected="true"] .n { color: color-mix(in srgb, var(--bg) 82%, var(--ink)); }
   .tag {
     display: inline-flex;
     align-items: center;
@@ -236,17 +238,29 @@
 /* ──────────────────────────────────────────────────────────────
    Motion. Content is visible by default; html.motion-ok is added by
    components/MotionRoot.js only when script runs and the visitor allows motion.
+   Only transform and opacity move (plus SVG stroke drawing). Entrances run once.
+   The one slow ambient loop on the page is Dalil's breathing glow.
    ────────────────────────────────────────────────────────────── */
-.motion-ok [data-reveal]:not([data-in]) { opacity: 0; transform: translateY(26px); }
+
+/* Section entrances: each section picks a style (components/Section.js `reveal`). */
+[data-reveal-style] { --reveal-from: translateY(26px); }
+[data-reveal-style="slide"] { --reveal-from: translateX(-28px); }
+[dir="rtl"] [data-reveal-style="slide"] { --reveal-from: translateX(28px); }
+[data-reveal-style="scale"] { --reveal-from: scale(0.96); }
+/* waiting elements are only transparent: giving ~150 elements a transform at once re-anchors every
+   absolutely positioned child and forces one huge layout; the movement lives in the keyframes */
+.motion-ok [data-reveal]:not([data-in]) { opacity: 0; }
 .motion-ok [data-reveal][data-in] { animation: rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms) backwards; }
 @keyframes rise {
-  from { opacity: 0; transform: translateY(26px); }
+  from { opacity: 0; transform: var(--reveal-from, translateY(26px)); }
   to { opacity: 1; transform: none; }
 }
 .motion-ok [data-in="instant"], .motion-ok [data-in="instant"] .split-piece { animation: none !important; }
+
+/* Section headings rise in piece by piece (English per letter, Arabic per word). */
 .split-piece { display: inline-block; }
 .split-word { display: inline-block; white-space: nowrap; }
-.motion-ok [data-split]:not([data-in]) .split-piece { opacity: 0; transform: translateY(0.45em); }
+.motion-ok [data-split]:not([data-in]) .split-piece { opacity: 0; }
 .motion-ok [data-split][data-in] .split-piece {
   animation: piece 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) calc(var(--i, 0) * 30ms) backwards;
 }
@@ -254,6 +268,143 @@
   from { opacity: 0; transform: translateY(0.45em); }
   to { opacity: 1; transform: none; }
 }
+
+/* Signature: the ink stroke under each title, then a guide line in the reading direction. */
+.ink-rule { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.ink { flex: none; overflow: visible; }
+[dir="rtl"] .ink { transform: scaleX(-1); }
+.ink path {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.6, 0, 0.2, 1) 0.15s;
+}
+.ink-dot { fill: var(--accent-2); transition: opacity 0.3s ease 1s; }
+.ink-guide {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--line), transparent);
+  transform-origin: left;
+  transition: transform 1.1s cubic-bezier(0.6, 0, 0.2, 1) 0.6s;
+}
+[dir="rtl"] .ink-guide { background: linear-gradient(to left, var(--line), transparent); transform-origin: right; }
+.motion-ok [data-draw]:not([data-in]) .ink path { stroke-dashoffset: 1; }
+.motion-ok [data-draw]:not([data-in]) .ink-dot { opacity: 0; }
+.motion-ok [data-draw]:not([data-in]) .ink-guide { transform: scaleX(0); }
+.motion-ok [data-draw][data-in="instant"] * { transition: none; }
+
+/* Hero: one entrance on load, in pure CSS (no waiting for JavaScript). */
+.hero-in { animation: hero-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) var(--hd, 0ms) both; }
+.hero-from-left { animation: from-left 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) var(--hd, 0ms) both; }
+.hero-from-right { animation: from-right 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) var(--hd, 0ms) both; }
+.hero-lift { animation: lift 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--hd, 0ms) both; }
+@keyframes hero-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes from-left { from { opacity: 0; transform: translateX(-56px); } to { opacity: 1; transform: none; } }
+@keyframes from-right { from { opacity: 0; transform: translateX(56px); } to { opacity: 1; transform: none; } }
+@keyframes lift { from { transform: translateY(14px); } to { transform: none; } }
+
+/* The two-way line between her two names: it grows from the centre in both directions. */
+.two-way { position: relative; height: 1px; width: min(100%, 420px); background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent-2) 80%, transparent); animation: two-way 1s cubic-bezier(0.6, 0, 0.2, 1) 0.45s both; }
+.two-way::before, .two-way::after { content: ""; position: absolute; top: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.two-way::before { left: 12%; }
+.two-way::after { right: 12%; background: var(--accent-2); }
+@keyframes two-way { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Portrait: a soft reveal, a frame that draws itself once, and a few pixels of parallax. */
+.portrait-cover { position: absolute; inset: 0; background: var(--bg); transform-origin: top; animation: cover-out 0.9s cubic-bezier(0.7, 0, 0.2, 1) 0.05s both; }
+@keyframes cover-out { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+.portrait-frame rect { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.4s cubic-bezier(0.6, 0, 0.2, 1) 0.3s forwards; }
+.portrait-frame rect + rect { stroke: var(--accent-2); animation-delay: 0.6s; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* A quiet design-system grid behind the hero, fading out before it reaches the text. */
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--line) 75%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 75%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+  -webkit-mask-image: radial-gradient(ellipse 55% 75% at 85% 40%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 55% 75% at 85% 40%, #000 0%, transparent 72%);
+}
+[dir="rtl"] .hero-grid {
+  -webkit-mask-image: radial-gradient(ellipse 55% 75% at 15% 40%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 55% 75% at 15% 40%, #000 0%, transparent 72%);
+}
+.hero-token { position: absolute; width: 8px; height: 8px; border-radius: 2px; }
+
+/* Cards: a lift, a soft spotlight that follows the pointer, a short press. */
+.spot { position: relative; isolation: isolate; }
+.spot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.spot:hover::before { opacity: 1; }
+.card-link:active, .chip:active { transform: scale(0.98); }
+
+/* Career highlights: a bar fills under each number when its count finishes. */
+.count-bar {
+  display: block;
+  height: 3px;
+  width: 48px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transform-origin: left;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[dir="rtl"] .count-bar { transform-origin: right; background: linear-gradient(-90deg, var(--accent), var(--accent-2)); }
+.motion-ok .count-bar:not([data-done]) { transform: scaleX(0); }
+
+/* Media: the play buttons pulse once when the section appears; covers zoom on hover. */
+.play-pulse { position: relative; }
+.play-pulse::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid white; opacity: 0; }
+.motion-ok [data-in] .play-pulse::after { animation: pulse-ring 1.2s ease-out 0.5s 1; }
+.cover-art { transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.group:hover .cover-art { transform: scale(1.06); }
+
+/* The board: the knight hops, the card slides in, the chosen square glows. */
+.knight-hop { animation: hop 0.65s cubic-bezier(0.45, 0, 0.25, 1); }
+@keyframes hop {
+  0% { transform: scale(1); }
+  45% { transform: translateY(-28%) scale(1.15); }
+  100% { transform: none; }
+}
+.board-card { animation: card-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.board-glow { animation: glow-in 0.3s ease both; }
+@keyframes glow-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Dalil: the bubble springs open from Dalil and closes softly; a nod when it speaks;
+   a very slow breathing glow while idle (the page's only ambient loop). */
+.dalil-bubble { transform-origin: var(--bubble-origin, bottom right); animation: bubble-in 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.dalil-bubble[data-closing] { animation: bubble-out 0.2s ease-in both; }
+@keyframes bubble-in { from { opacity: 0; transform: scale(0.85) translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes bubble-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.94); } }
+.dalil-nod { animation: nod 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes nod {
+  0% { transform: none; }
+  30% { transform: translateY(-3px) scale(1.08); }
+  60% { transform: translateY(1px) scale(0.98); }
+  100% { transform: none; }
+}
+.dalil-breathe { position: absolute; inset: -7px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%); animation: breathe 6s ease-in-out infinite; pointer-events: none; }
+@keyframes breathe {
+  0%, 100% { opacity: 0.12; transform: scale(0.9); }
+  50% { opacity: 0.5; transform: scale(1.06); }
+}
+
 @keyframes pop {
   from { opacity: 0; transform: scale(0.86); }
   to { opacity: 1; transform: scale(1); }
@@ -262,10 +413,19 @@
   from { transform: scale(1); opacity: 0.55; }
   to { transform: scale(2.6); opacity: 0; }
 }
+
+/* Page changes: a short crossfade, and the project title morphs from its card (React <ViewTransition>). */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.28s; }
+::view-transition-group(.morph) { animation-duration: 0.45s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    animation-delay: 0s !important;
   }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .dalil-breathe { display: none; }
 }

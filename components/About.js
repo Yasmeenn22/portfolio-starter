@@ -12,7 +12,7 @@ export default function About({ lang }) {
   const t = getUi(lang).about;
   const { areas, cards } = buildSkillExplorer(lang);
   return (
-    <Section id="about" lang={lang} title={t.title} tip="about" alt>
+    <Section id="about" lang={lang} title={t.title} tip="about">
       <p className="mt-6 max-w-[68ch] text-[1.15rem] leading-[1.75]" data-reveal="">
         {bidi(cv.summary, lang)}
       </p>
@@ -21,7 +21,7 @@ export default function About({ lang }) {
         <h3 className="h3">{t.highlights}</h3>
         <ul className="mt-5 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
           {cv.highlights.map((h) => (
-            <li key={h.text} className="card flex flex-col gap-3 p-5" data-reveal="">
+            <li key={h.text} className="card spot flex flex-col gap-3 p-5" data-reveal="">
               <CountUp value={h.stat} className="text-[2.4rem] font-bold leading-none tracking-tight text-accent" />
               <span className="text-[15px] leading-snug">{bidi(h.text, lang)}</span>
             </li>

@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, ViewTransition } from "react";
 import Link from "next/link";
 import { getUi } from "@/data/ui";
 import { bidi } from "@/lib/bidi";
 import { localePath } from "@/lib/paths";
 import { techIcon } from "@/lib/icons";
 import BrandIcon from "@/components/BrandIcon";
+import { useFlip } from "@/lib/useFlip";
 
 // `projects` carries both the visitor's language and the English domain key for filtering.
 export default function Projects({ lang, projects }) {
   const t = getUi(lang).projects;
   const domains = ["All", ...new Set(projects.map((p) => p.domain))];
   const [domain, setDomain] = useState("All");
+  const listRef = useRef(null);
+  useFlip(listRef, domain);
   const shown = domain === "All" ? projects : projects.filter((p) => p.domain === domain);
   const count = (d) => (d === "All" ? projects.length : projects.filter((p) => p.domain === d).length);
 
@@ -28,17 +31,19 @@ export default function Projects({ lang, projects }) {
       <p className="sr-only" aria-live="polite">
         {t.showing(shown.length, projects.length)}
       </p>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ul ref={listRef} className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {shown.map((p) => (
-          <li key={p.slug} data-reveal="">
-            <article className="card card-link relative flex h-full flex-col p-5">
+          <li key={p.slug} data-flip={p.slug} data-reveal="">
+            <article className="card card-link spot flex h-full flex-col p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="badge">{t.domains[p.domain]}</span>
                 <span className="text-[13px] tabular-nums text-muted">{p.period}</span>
               </div>
               <h3 className="h3 mt-4">
                 <Link href={localePath(lang, `/projects/${p.slug}/`)} className="text-ink no-underline after:absolute after:inset-0 after:rounded-[var(--radius)] after:content-['']">
-                  {bidi(p.name, lang)}
+                  <ViewTransition name={`project-${p.slug}`} share="morph" default="none">
+                    <span>{bidi(p.name, lang)}</span>
+                  </ViewTransition>
                 </Link>
               </h3>
               {p.org ? <p className="mt-1 text-[14px] text-muted">{bidi(p.org, lang)}</p> : null}

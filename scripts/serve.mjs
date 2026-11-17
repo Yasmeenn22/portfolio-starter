@@ -1,12 +1,12 @@
 // Serves the built site (out/) like GitHub Pages does: gzip, long caching for hashed files,
-// folder -> index.html, unknown paths -> 404.html.   node scripts/serve.mjs [port]
+// folder -> index.html, unknown paths -> 404.html.   node scripts/serve.mjs [port] [folder]
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import path from "node:path";
 
-const OUT = path.resolve("out");
 const PORT = Number(process.argv[2] || 4173);
+const OUT = path.resolve(process.argv[3] || "out"); // optional: another build folder
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".woff2": "font/woff2", ".pdf": "application/pdf", ".txt": "text/plain; charset=utf-8", ".json": "application/json" };
 const TEXT = new Set([".html", ".js", ".css", ".svg", ".txt", ".json"]);
 

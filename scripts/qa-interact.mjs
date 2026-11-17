@@ -173,28 +173,64 @@ for (const lang of ["en", "ar"]) {
     const p = await open(root);
     await p.locator("#gallery").scrollIntoViewIfNeeded();
     await p.locator(`#gallery button[aria-label="${L("Next photo", "الصورة التالية")}"]`).click();
-    await p.waitForTimeout(900);
+    await p.waitForTimeout(1500);
     const cur = await p.locator('#gallery button[aria-current="true"]').getAttribute("aria-label");
     assert(cur.includes("2"), `expected photo 2, got ${cur}`);
     await p.locator("#gallery [tabindex='0']").focus();
     await p.keyboard.press(L("ArrowRight", "ArrowLeft"));
-    await p.waitForTimeout(900);
+    await p.waitForTimeout(1500);
     const cur2 = await p.locator('#gallery button[aria-current="true"]').getAttribute("aria-label");
     assert(cur2.includes("3"), `expected photo 3, got ${cur2}`);
     await p.context().close();
   });
 
-  await check(`${lang}: The Long Run answers, advances, finishes and has a list view`, async () => {
+  await check(`${lang}: the gallery comes right after the hero`, async () => {
     const p = await open(root);
-    const card = p.locator("#beyond");
-    for (let i = 0; i < 15; i++) {
-      await card.locator("fieldset button").first().click();
-      await card.locator("button.btn-primary").click();
+    const ids = await p.evaluate(() => [...document.querySelectorAll("main > section")].map((x) => x.id));
+    assert(ids[0] === "top" && ids[1] === "gallery" && ids[2] === "about", ids.join(","));
+    await p.context().close();
+  });
+
+  await check(`${lang}: The Board: tap a piece, play the story, next, list view, checkmate`, async () => {
+    const p = await open(root);
+    const board = p.locator("#beyond");
+    await board.scrollIntoViewIfNeeded();
+    // tap a piece: its card shows the CV line
+    await board.locator('.grid-cols-8 button[aria-pressed="false"]').first().click();
+    assert(/1 \/ 15/.test(await board.innerText()), "tapping a piece should discover 1 / 15");
+    // play the story: the knight reaches the first stops on its own
+    await board.locator("button.btn-primary").click();
+    await p.waitForTimeout(2900);
+    assert(await p.evaluate(() => document.body.hasAttribute("data-story-playing")), "story should be playing");
+    await board.locator("button.btn-primary").click(); // pause
+    // next until the end
+    for (let i = 0; i < 16; i++) {
+      const next = board.locator("button.btn:not(.btn-primary)", { hasText: L("Next", "التالي") });
+      if (await next.isDisabled()) break;
+      await next.click();
     }
-    const text = await card.innerText();
-    assert(/of 15|من 15/.test(text), "finish line missing");
-    await card.locator("button.chip").click();
-    assert((await card.locator('li[id^="lead-"], li[id^="lang-"], li[id^="interest-"]').count()) === 15, "list view should show 15 items");
+    const text = await board.innerText();
+    assert(/15 \/ 15/.test(text), "all 15 should be discovered");
+    assert(text.includes(L("Checkmate", "كش ملك")), "checkmate line missing");
+    // keyboard: arrows move between squares
+    await board.locator('[role="group"] button[tabindex="0"]').focus();
+    const before = await p.evaluate(() => document.activeElement.getAttribute("aria-label"));
+    await p.keyboard.press("ArrowDown");
+    const after = await p.evaluate(() => document.activeElement.getAttribute("aria-label"));
+    assert(before !== after, "arrow key did not move focus");
+    // list view
+    await board.locator("button.chip", { hasText: L("View as list", "اعرض كقائمة") }).click();
+    assert((await board.locator('li[id^="lead-"], li[id^="lang-"], li[id^="interest-"]').count()) === 15, "list view should show 15 items");
+    await p.context().close();
+  });
+
+  await check(`${lang}: Dalil speaks on its own when a section is reached`, async () => {
+    const p = await open(root);
+    await p.waitForTimeout(2500); // Dalil mounts when the browser is idle
+    await p.evaluate(() => document.getElementById("experience").scrollIntoView());
+    await p.waitForTimeout(1600);
+    const text = await p.locator(".dalil-bubble").innerText();
+    assert(text.includes(L("Zayna", "Zayna")), `expected the Experience tip, got "${text}"`);
     await p.context().close();
   });
 

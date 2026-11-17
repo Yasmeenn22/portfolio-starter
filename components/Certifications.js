@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getUi } from "@/data/ui";
 import { bidi, Ltr } from "@/lib/bidi";
 import { onReveal } from "@/lib/reveal";
+import { useFlip } from "@/lib/useFlip";
 
 const STATUSES = ["All", "Active", "Lifetime", "Expired", "In progress"];
 
@@ -11,6 +12,8 @@ export default function Certifications({ lang, items, note }) {
   const t = getUi(lang).education;
   const [status, setStatus] = useState("All");
   const [query, setQuery] = useState("");
+  const listRef = useRef(null);
+  useFlip(listRef, `${status}|${query}`);
 
   // A link to #cert-<i> clears the filter and the search so the entry is visible.
   useEffect(
@@ -58,10 +61,10 @@ export default function Certifications({ lang, items, note }) {
         {t.shown(shown.length, items.length)}
       </p>
 
-      <ul className="card mt-5 divide-y divide-line overflow-hidden">
+      <ul ref={listRef} className="card mt-5 divide-y divide-line overflow-hidden">
         {shown.length === 0 ? <li className="p-5 text-muted">{t.noMatch(query)}</li> : null}
         {shown.map((c) => (
-          <li key={c.i} id={`cert-${c.i}`} tabIndex={-1} className="grid gap-x-6 gap-y-1.5 p-4 md:grid-cols-12 md:items-center md:px-5">
+          <li key={c.i} data-flip={c.i} id={`cert-${c.i}`} tabIndex={-1} className="grid gap-x-6 gap-y-1.5 p-4 md:grid-cols-12 md:items-center md:px-5">
             <div className="min-w-0 md:col-span-6">
               <p className="font-semibold leading-snug">{bidi(c.name, lang)}</p>
               <p className="text-[14px] text-muted">{bidi(c.issuer, lang)}</p>

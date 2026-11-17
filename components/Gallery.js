@@ -13,12 +13,15 @@ export default function Gallery({ lang, photos }) {
   const trackRef = useRef(null);
   const [index, setIndex] = useState(0);
   const drag = useRef(null);
+  // where a button or key press is taking us, so quick presses chain even mid-scroll
+  const target = useRef(null);
 
   const slides = () => [...(trackRef.current?.children || [])];
 
   const go = useCallback((i, smooth = true) => {
     const list = slides();
     const n = Math.max(0, Math.min(list.length - 1, i));
+    target.current = n;
     const track = trackRef.current;
     const s = list[n];
     if (!track || !s) return;
@@ -45,6 +48,7 @@ export default function Gallery({ lang, photos }) {
         }
       });
       setIndex(best);
+      if (target.current === best) target.current = null; // arrived
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -76,6 +80,7 @@ export default function Gallery({ lang, photos }) {
     if (!drag.current) return;
     drag.current = null;
     delete trackRef.current.dataset.dragging;
+    target.current = null;
     go(index);
   }
 
@@ -84,10 +89,10 @@ export default function Gallery({ lang, photos }) {
     const prev = lang === "ar" ? "ArrowRight" : "ArrowLeft";
     if (e.key === next) {
       e.preventDefault();
-      go(index + 1);
+      go((target.current ?? index) + 1);
     } else if (e.key === prev) {
       e.preventDefault();
-      go(index - 1);
+      go((target.current ?? index) - 1);
     } else if (e.key === "Home") {
       e.preventDefault();
       go(0);
@@ -129,7 +134,7 @@ export default function Gallery({ lang, photos }) {
       </div>
 
       <div className="mt-5 flex items-center justify-center gap-4">
-        <button type="button" className="btn btn-icon" onClick={() => go(index - 1)} disabled={index === 0} aria-label={t.prev}>
+        <button type="button" className="btn btn-icon" onClick={() => go((target.current ?? index) - 1)} disabled={index === 0} aria-label={t.prev}>
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="flip-rtl"><path d="m15 6-6 6 6 6" /></svg>
         </button>
         <div className="flex items-center gap-1">
@@ -146,7 +151,7 @@ export default function Gallery({ lang, photos }) {
             </button>
           ))}
         </div>
-        <button type="button" className="btn btn-icon" onClick={() => go(index + 1)} disabled={index === photos.length - 1} aria-label={t.next}>
+        <button type="button" className="btn btn-icon" onClick={() => go((target.current ?? index) + 1)} disabled={index === photos.length - 1} aria-label={t.next}>
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="flip-rtl"><path d="m9 6 6 6-6 6" /></svg>
         </button>
       </div>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getUi } from "@/data/ui";
 import { bidi } from "@/lib/bidi";
 import { onReveal } from "@/lib/reveal";
 import { techIcon } from "@/lib/icons";
 import BrandIcon from "@/components/BrandIcon";
+import { useFlip } from "@/lib/useFlip";
 
 const FILTERS = ["all", "leadership", "engineering", "startups", "research"];
 
@@ -24,6 +25,8 @@ export default function Experience({ lang, roles }) {
   const t = getUi(lang).experience;
   const [filter, setFilter] = useState("all");
   const [open, setOpen] = useState(() => new Set());
+  const listRef = useRef(null);
+  useFlip(listRef, filter);
 
   // A link to #exp-<id> (journey, skill explorer) clears the filter and opens that role.
   useEffect(
@@ -71,11 +74,11 @@ export default function Experience({ lang, roles }) {
         {t.showing(shown.length, roles.length)}
       </p>
 
-      <ol className="mt-6 grid gap-4">
+      <ol ref={listRef} className="mt-6 grid gap-4">
         {groups.map((g) => {
           const path = g.roles.length > 1;
           return (
-            <li key={g.roles[0].id} className={path ? "card p-4 md:p-5" : ""} data-reveal="">
+            <li key={g.roles[0].id} data-flip={g.roles[0].id} className={path ? "card p-4 md:p-5" : ""} data-reveal="">
               {path ? (
                 <p className="mb-3 flex flex-wrap items-center gap-2 px-1">
                   <span className="font-semibold">{bidi(g.company, lang)}</span>

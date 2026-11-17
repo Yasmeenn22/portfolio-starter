@@ -2,6 +2,7 @@
 // Plain Node, no dependencies.
 import { cvEn, cvAr } from "../data/cv.js";
 import { ui } from "../data/ui.js";
+import { boardItems, SQUARES, KNIGHT_HOME } from "../lib/board.js";
 
 const errors = [];
 const fail = (msg) => errors.push(msg);
@@ -50,18 +51,21 @@ function compare(a, b, path) {
 compare(cvEn, cvAr, "cv");
 compare(ui.en, ui.ar, "ui");
 
-// 3. The game: 15 checkpoints, three options each, a valid answer.
-for (const lang of ["en", "ar"]) {
-  const cps = ui[lang].game.checkpoints;
-  if (cps.length !== 15) fail(`${lang}: the game has ${cps.length} checkpoints, needs 15`);
-  cps.forEach((c, i) => {
-    if (c.options.length !== 3 || !(c.answer >= 0 && c.answer < 3)) fail(`${lang}: checkpoint ${i + 1} needs 3 options and a valid answer`);
-  });
+// 3. The Board: all 15 items, once each, each on its own square, in both languages.
+for (const [lang, cv] of [["en", cvEn], ["ar", cvAr]]) {
+  const items = boardItems(cv, lang);
+  const groups = items.reduce((m, it) => ({ ...m, [it.group]: (m[it.group] || 0) + 1 }), {});
+  if (items.length !== 15 || new Set(items.map((i) => i.id)).size !== 15) fail(`${lang}: the board needs 15 different items`);
+  if (groups.languages !== 5 || groups.leadership !== 6 || groups.interests !== 4) fail(`${lang}: the board groups should be 5/6/4`);
+  if (items.some((i) => !i.title)) fail(`${lang}: a board item has no title`);
 }
+const squares = SQUARES.map(([r, c]) => `${r},${c}`);
+if (new Set(squares).size !== 15 || squares.includes(KNIGHT_HOME.join(",")) || SQUARES.some(([r, c]) => r < 0 || r > 7 || c < 0 || c > 7))
+  fail("board squares must be 15 different squares on the board, none on the knight's home");
 
 if (errors.length) {
   console.error(`CV check failed (${errors.length}):\n- ` + errors.join("\n- "));
   process.exit(1);
 }
 const rows = Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(" · ");
-console.log(`CV check passed in English and Arabic: ${rows} · certifications by status 9/7/3/1`);
+console.log(`CV check passed in English and Arabic: ${rows} · certifications by status 9/7/3/1 · board 15 items`);
