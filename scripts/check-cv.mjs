@@ -63,9 +63,19 @@ const squares = SQUARES.map(([r, c]) => `${r},${c}`);
 if (new Set(squares).size !== 15 || squares.includes(KNIGHT_HOME.join(",")) || SQUARES.some(([r, c]) => r < 0 || r > 7 || c < 0 || c > 7))
   fail("board squares must be 15 different squares on the board, none on the knight's home");
 
+// 4. Dalil: every section has 2 or 3 tips in each language (rotated, never the same twice in a row).
+const sectionTips = ["top", "gallery", "about", "experience", "projects", "education", "recognition", "speaking", "beyond", "contact"];
+for (const key of sectionTips) {
+  const en = ui.en.dalil.tips[key];
+  const ar = ui.ar.dalil.tips[key];
+  if (!Array.isArray(en) || en.length < 2 || en.length > 3) fail(`ui.en.dalil.tips.${key} needs 2 or 3 tips`);
+  if (!Array.isArray(ar) || ar.length !== en?.length) fail(`ui.ar.dalil.tips.${key} needs the same number of tips as English`);
+  if (new Set(en).size !== en?.length || new Set(ar).size !== ar?.length) fail(`dalil tips for ${key} repeat`);
+}
+
 if (errors.length) {
   console.error(`CV check failed (${errors.length}):\n- ` + errors.join("\n- "));
   process.exit(1);
 }
 const rows = Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(" · ");
-console.log(`CV check passed in English and Arabic: ${rows} · certifications by status 9/7/3/1 · board 15 items`);
+console.log(`CV check passed in English and Arabic: ${rows} · certifications by status 9/7/3/1 · board 15 items · Dalil tips 2–3 per section`);

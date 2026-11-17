@@ -4,8 +4,9 @@
 // already installed on this machine. Serves out/ on 127.0.0.1, then at 360…1920px,
 // in English and Arabic, light and dark, fails when:
 //   the page is wider than the screen · a section overlaps the next one ·
-//   a reveal element is still invisible after scrolling · the console shows an error.
-// Full-page screenshots go to .qa/shots/.
+//   a reveal element on screen is still invisible after scrolling (motion replays, so elements
+//   off screen are meant to be reset) · the console shows an error.
+// Full-page screenshots go to .qa/shots/ (taken with reduced motion, so every element is settled).
 import { createServer } from "node:http";
 import { readFile, stat, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -99,13 +100,20 @@ for (const page of PAGES) {
           const b = sections[i + 1].getBoundingClientRect();
           if (a.bottom > b.top + 1) out.push(`#${sections[i].id || sections[i].tagName} overlaps #${sections[i + 1].id || sections[i + 1].tagName} by ${Math.round(a.bottom - b.top)}px`);
         }
-        const stuck = [...document.querySelectorAll("[data-reveal], [data-split] .split-piece")].filter((el) => el.offsetParent !== null && parseFloat(getComputedStyle(el).opacity) < 0.99);
+        // only what is on screen must be visible: off-screen elements are reset so they can replay
+        const onScreen = (el) => {
+          const r = el.getBoundingClientRect();
+          return r.height > 0 && Math.min(r.bottom, innerHeight) - Math.max(r.top, 0) >= Math.min(r.height * 0.1, 40);
+        };
+        const stuck = [...document.querySelectorAll("[data-reveal], [data-split] .split-piece")].filter((el) => el.offsetParent !== null && onScreen(el) && parseFloat(getComputedStyle(el).opacity) < 0.99);
         if (stuck.length) out.push(`${stuck.length} reveal elements still invisible, first: ${stuck[0].outerHTML.slice(0, 90)}`);
         return out;
       });
       for (const e of errors) report.push(`console: ${e.slice(0, 160)}`);
       const name = `${page === "/" ? "en" : "ar"}-${theme}-${width}`;
+      await tab.emulateMedia({ reducedMotion: "reduce" }); // everything settles and shows at once
       await tab.evaluate(() => scrollTo(0, 0));
+      await tab.waitForTimeout(200);
       await tab.screenshot({ path: `.qa/shots/${name}.png`, fullPage: true });
       console.log(`${report.length ? "FAIL" : "ok  "} ${name}${report.length ? "\n     - " + report.join("\n     - ") : ""}`);
       if (report.length) failures.push(name);

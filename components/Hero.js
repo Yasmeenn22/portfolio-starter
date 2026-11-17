@@ -4,13 +4,17 @@ import { getUi } from "@/data/ui";
 import { cvHref } from "@/lib/paths";
 import { bidi, Ltr } from "@/lib/bidi";
 import LinkIcon from "@/components/LinkIcon";
-import HeroParallax from "@/components/HeroParallax";
+import { calli } from "@/lib/fonts-calli";
 import portrait from "@/assets/yara/portrait.jpg";
 
 /*
   The hero carries the signature, "designs in two directions" (her Riyadh Tech Review cover story):
   her English name arrives from the left and her Arabic name from the right, on both pages, and a
   thin line grows between them in both directions. The entrance is pure CSS and runs once on load.
+  Her Arabic name is drawn in a Ruqʿah hand (her calligraphy, from the CV's interests), written
+  right to left as if by a pen. That copy is decorative (aria-hidden); the real name sits beside it
+  as plain text for screen readers and search engines.
+  Depth: the grid and the portrait drift a few pixels at different speeds while scrolling (CSS).
 */
 export default function Hero({ lang }) {
   const cv = getCv(lang);
@@ -26,24 +30,26 @@ export default function Hero({ lang }) {
     </span>
   );
   const arabicName = (
-    <span lang="ar" dir="rtl" className="hero-from-right block" style={{ "--hd": "300ms" }}>
-      {arabic}
+    <span lang="ar" dir="rtl" className="block">
+      <span className="sr-only">{arabic}</span>
+      <span aria-hidden="true" className={`${calli.variable} calli pen pen-hero ${ar ? "" : "calli-sub ml-auto"}`}>
+        {arabic}
+      </span>
     </span>
   );
 
   return (
     <section id="top" aria-labelledby="top-title" data-tip="top" className="relative isolate overflow-hidden pb-20 pt-10 md:pb-24 md:pt-16">
       {/* a quiet design-system grid, with a few "tokens" on it */}
-      <div className="hero-grid" aria-hidden="true">
+      <div className="hero-grid" aria-hidden="true" data-depth="" style={{ "--depth": -14 }}>
         <span className="hero-token end-[18%] top-[22%] bg-accent opacity-40" />
         <span className="hero-token end-[30%] top-[58%] bg-accent-2 opacity-40" />
         <span className="hero-token end-[9%] top-[70%] bg-accent opacity-25" />
       </div>
-      <HeroParallax />
 
       <div className="wrap">
         <div className="flex flex-col gap-7 md:flex-row md:items-center md:gap-12">
-          <div data-parallax="" className="relative size-32 shrink-0 md:size-[200px]">
+          <div data-depth="" style={{ "--depth": 10 }} className="relative size-32 shrink-0 md:size-[200px]">
             <svg className="portrait-frame pointer-events-none absolute -inset-3 size-[calc(100%+24px)]" viewBox="0 0 224 224" aria-hidden="true">
               <rect pathLength="1" x="1" y="1" width="222" height="222" rx="40" />
               <rect pathLength="1" x="7" y="7" width="210" height="210" rx="36" opacity="0.5" />

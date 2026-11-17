@@ -8,6 +8,8 @@ import { bidi } from "@/lib/bidi";
 // A scroll-snap carousel: native touch swipe, plus mouse drag, previous/next buttons,
 // dots and the arrow keys. The centred photo is full size; neighbours peek in smaller.
 // It runs right to left in Arabic because the track inherits dir="rtl". No autoplay.
+// Motion: the centred photo zooms in very slowly (4%), neighbours ease out; the frame drifts a few
+// pixels while the page scrolls (CSS, data-depth).
 export default function Gallery({ lang, photos }) {
   const t = getUi(lang).gallery;
   const trackRef = useRef(null);
@@ -103,7 +105,7 @@ export default function Gallery({ lang, photos }) {
   }
 
   return (
-    <div className="mt-8" role="region" aria-roledescription="carousel" aria-label={t.label}>
+    <div className="mt-8" role="region" aria-roledescription="carousel" aria-label={t.label} data-depth="" style={{ "--depth": 8 }}>
       <div
         ref={trackRef}
         tabIndex={0}
@@ -121,12 +123,12 @@ export default function Gallery({ lang, photos }) {
             aria-roledescription="slide"
             aria-label={t.slide(i + 1, photos.length)}
             aria-hidden={i !== index ? "true" : undefined}
-            className={`w-[78%] shrink-0 snap-center transition-[transform,opacity] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] md:w-[70%] ${
+            className={`w-[78%] shrink-0 snap-center transition-[transform,opacity,scale] duration-700 ease-[cubic-bezier(.2,.8,.2,1)] md:w-[70%] ${
               i === index ? "" : "scale-[.92]"
             }`}
           >
-            <div className={`relative aspect-[16/9] overflow-hidden rounded-[var(--radius)] bg-surface-2 ring-1 ring-line transition-opacity duration-500 ${i === index ? "" : "opacity-55"}`}>
-              <Image src={p.src} alt={p.alt} fill sizes="(min-width: 1120px) 790px, 78vw" draggable={false} className="pointer-events-none object-cover" />
+            <div className={`relative aspect-[16/9] overflow-hidden rounded-[var(--radius)] bg-surface-2 ring-1 ring-line transition-opacity duration-700 ${i === index ? "" : "opacity-55"}`}>
+              <Image src={p.src} alt={p.alt} fill sizes="(min-width: 1120px) 790px, 78vw" draggable={false} className={`gallery-photo pointer-events-none object-cover ${i === index ? "is-centre" : ""}`} />
             </div>
             <p className="mt-3 text-[15px] leading-snug text-muted">{bidi(p.caption, lang)}</p>
           </div>

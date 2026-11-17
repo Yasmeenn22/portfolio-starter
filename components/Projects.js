@@ -48,7 +48,7 @@ export default function Projects({ lang, projects }) {
               </h3>
               {p.org ? <p className="mt-1 text-[14px] text-muted">{bidi(p.org, lang)}</p> : null}
               <p className="mt-4">
-                <span dir="ltr" className="inline-block text-[1.9rem] font-bold leading-none tracking-tight text-accent">
+                <span dir="ltr" className="metric inline-block text-[1.9rem] font-bold leading-none tracking-tight text-accent">
                   {p.metric.value}
                 </span>
                 <span className="mt-1 block text-[14px] text-muted">{bidi(p.metric.label, lang)}</span>

@@ -33,6 +33,9 @@ function Cover({ kind }) {
   );
 }
 
+// The cards fan in as the section enters: the outer ones tilt most (degrees), mirrored in Arabic.
+const FAN = [-4, -1.5, 1.5, 4];
+
 const quote = (s, lang) => (lang === "ar" ? `«${s}»` : `“${s}”`);
 
 export default function MediaCards({ lang, media }) {
@@ -62,9 +65,16 @@ export default function MediaCards({ lang, media }) {
   const m = current !== null ? media[current] : null;
   return (
     <>
-      <ul className="-mx-5 mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+      <ul className="fan -mx-5 mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
         {media.map((item, i) => (
-          <li key={i} id={`media-${i}`} tabIndex={-1} className="w-[78%] shrink-0 snap-start sm:w-auto" data-reveal="">
+          <li
+            key={i}
+            id={`media-${i}`}
+            tabIndex={-1}
+            className="w-[78%] shrink-0 snap-start sm:w-auto"
+            data-reveal=""
+            style={{ "--fan": FAN[i % FAN.length] * (lang === "ar" ? -1 : 1) }}
+          >
             <button
               type="button"
               onClick={(e) => open(i, e)}

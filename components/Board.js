@@ -12,7 +12,8 @@ import { KNIGHT_HOME } from "@/lib/board";
   (languages, then giving back by start date, then interests), about 2 seconds a stop.
   Squares are real buttons; the arrow keys move between them; the card is aria-live.
   The grid follows the page direction, so in Arabic the board is mirrored and the story
-  starts on the right.
+  starts on the right. When the board scrolls into view the pieces drop onto their squares one by
+  one (story order); the knight hops along a short arc (its slide plus a lift in the middle).
 */
 const GLYPH = { languages: "♝", leadership: "♜", interests: "♞" };
 const TEXT = "︎"; // keep chess glyphs as text, never emoji
@@ -175,7 +176,7 @@ export default function Board({ lang, items, leadershipNote }) {
         {/* the board */}
         <div className="lg:col-span-6">
           <div className="relative mx-auto aspect-square w-full max-w-[480px] overflow-hidden rounded-[14px] border border-line">
-            <div role="group" aria-label={t.boardLabel} onKeyDown={onKeyDown} className="grid size-full grid-cols-8 grid-rows-8">
+            <div role="group" aria-label={t.boardLabel} onKeyDown={onKeyDown} className="grid size-full grid-cols-8 grid-rows-8" data-stage="">
               {Array.from({ length: 64 }, (_, n) => {
                 const r = Math.floor(n / 8);
                 const c = n % 8;
@@ -207,6 +208,7 @@ export default function Board({ lang, items, leadershipNote }) {
                     {it ? (
                       <span
                         aria-hidden="true"
+                        style={{ "--pi": i }}
                         className={`board-piece relative text-[clamp(22px,6.4vw,38px)] leading-none transition-[transform,opacity] duration-300 ${
                           it.group === "languages" ? "text-accent" : it.group === "interests" ? "text-accent-2" : "text-ink"
                         } ${isSel ? "-translate-y-1 scale-[1.15]" : "group-hover:-translate-y-0.5"} ${dim ? "opacity-25" : ""} ${knightHere ? "opacity-20" : ""}`}
@@ -237,7 +239,7 @@ export default function Board({ lang, items, leadershipNote }) {
             {/* the story knight */}
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute left-0 top-0 z-[2] grid size-[12.5%] place-items-center transition-transform duration-[650ms] ease-[cubic-bezier(.45,0,.25,1)]"
+              className="pointer-events-none absolute left-0 top-0 z-[2] grid size-[12.5%] place-items-center transition-transform duration-[650ms] ease-[cubic-bezier(.45,0,.55,1)]"
               style={{ transform: `translate(${kx * 100}%, ${knight[0] * 100}%)` }}
             >
               <span key={story} className="knight-hop grid size-[78%] place-items-center rounded-full bg-ink text-[clamp(18px,5vw,28px)] leading-none text-bg shadow-lg">

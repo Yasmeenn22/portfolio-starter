@@ -3,7 +3,9 @@ import SplitHeading from "@/components/SplitHeading";
 // Every home section uses this, so spacing and headings are identical everywhere.
 // Signature ("designs in two directions"): under each title a calligraphic ink stroke draws
 // itself, then a hairline guide runs on in the reading direction (mirrored in Arabic).
-// `reveal` sets how this section's content enters: "rise" (default), "slide" or "scale".
+// The title is also wiped in from the reading start (left in English, right in Arabic).
+// `reveal` sets how this section's content enters: "rise" (default), "slide", "scale" or "wipe".
+// Every entrance replays each time it scrolls back into view (components/MotionRoot.js).
 export default function Section({ id, lang, title, lead, tip, alt = false, reveal = "rise", children }) {
   return (
     <section

@@ -56,7 +56,7 @@ export default function Journey({ items, lang, now, openLabel }) {
         {items.map((m, i) => {
           const id = m.href.slice(1);
           return (
-            <li key={i} className="relative ps-10" data-reveal="" style={{ "--reveal-from": lang === "ar" ? "translateX(28px)" : "translateX(-28px)" }}>
+            <li key={i} className="reveal-side relative ps-10" data-reveal="">
               {m.current ? (
                 <span aria-hidden="true" className="absolute start-[4px] top-[18px] size-4 animate-[pulse-ring_2s_ease-out_3] rounded-full bg-accent" />
               ) : null}

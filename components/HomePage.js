@@ -14,6 +14,7 @@ import Gallery from "@/components/Gallery";
 import Board from "@/components/Board";
 import { boardItems } from "@/lib/board";
 import LinkIcon from "@/components/LinkIcon";
+import { calli } from "@/lib/fonts-calli";
 import workshop from "@/assets/yara/gallery/workshop.jpg";
 import keynote from "@/assets/yara/gallery/keynote.jpg";
 import panel from "@/assets/yara/gallery/panel.jpg";
@@ -25,6 +26,8 @@ export default function HomePage({ lang }) {
   const cv = getCv(lang);
   const t = getUi(lang);
   const items = boardItems(cv, lang);
+  // the CV's own words for her calligraphy, shown under the sign-off
+  const calligraphy = cv.interests[cvEn.interests.findIndex((x) => x.title === "Arabic calligraphy")];
 
   return (
     <main id="main" tabIndex={-1} className="outline-none">
@@ -40,7 +43,7 @@ export default function HomePage({ lang }) {
         <Experience lang={lang} roles={cv.experience} />
       </Section>
 
-      <Section id="projects" lang={lang} title={t.projects.title} lead={t.projects.lead} tip="projects">
+      <Section id="projects" lang={lang} title={t.projects.title} lead={t.projects.lead} tip="projects" reveal="wipe">
         <Projects lang={lang} projects={cv.projects.map((p, i) => ({ ...p, domain: cvEn.projects[i].domain }))} />
       </Section>
 
@@ -162,6 +165,20 @@ export default function HomePage({ lang }) {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* The ending of "two directions": the hero's two lines return from both sides and meet,
+            then her first name is written in calligraphy as a sign-off (decorative, aria-hidden). */}
+        <div className="closing mt-16 md:mt-20" data-stage="">
+          <div className="meet" dir="ltr" aria-hidden="true">
+            <span className="meet-a" />
+            <span className="meet-dot" />
+            <span className="meet-b" />
+          </div>
+          <p aria-hidden="true" lang="ar" dir="rtl" className={`${calli.variable} calli pen pen-sign mx-auto`}>
+            {cvEn.nameAr.split(" ")[0]}
+          </p>
+          {calligraphy ? <p className="mt-1 text-center text-[13.5px] text-muted">{bidi(calligraphy.line, lang)}</p> : null}
         </div>
       </Section>
     </main>
